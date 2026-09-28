@@ -165,7 +165,7 @@ def panel(w, h, clip_id="p") -> tuple[str, str]:
 
 COPY = dict(
     name="Hassan Arshad",
-    hero=["I co-founded Zensbot. We build AI", "products used every day by schools,", "law firms and sales teams."],
+    hero=["We build AI products used by thousands", "of people every day, across law,", "education, finance and business."],
     zl_head="The LMS 500+ institutes run on.",
     zl_body=["Web, mobile and desktop apps with live classes,", "all under each institute's own brand."],
     qa_head="AI legal research for Pakistan.",
@@ -175,7 +175,7 @@ COPY = dict(
     wall="Some of the companies that we have worked with",
 )
 EXTRA = ("AI agents behind every email 5 zensbot.com coldbot.pro qanoonai.pk zenslearn.com → 500+ 10,000+ institutes users 16.3M "
-         "judgments across 21 jurisdictions Raising PKR 14M LinkedIn Instagram Email in/hassanarshadd @zensbot hassan@zensbot.com ↗")
+         "judgments across 21 jurisdictions Raising PKR 14M raising now LinkedIn Instagram Email in/hassanarshadd @zensbot hassan@zensbot.com ↗")
 ALL_TEXT = " ".join(v if isinstance(v, str) else " ".join(v) for v in COPY.values()) + EXTRA
 
 
@@ -266,7 +266,7 @@ def half(name, logo_path, logo_h, head, body_rows, stat, shot_name, box, link, l
         f'<g class="in d1">{img(lg, 32, 36, lw, logo_h)}'
         f'{text(30, 112, head, 23, 600, INK, ls=-.5)}'
         f'{lines(32, 140, body_rows, 14.5, 21)}{stat}{extra}</g>'
-        f'<g class="in d3">{frame(f"h{name}", shot(shot_name, box, 372, 196), 32, 262, 372, 196)}</g>'
+        f'<g class="in d3">{frame(f"h{name}", shot(shot_name, box, 372, 196), 32, 268, 372, 196)}</g>'
     ) + c
     svg_half(name, h, body, label, link)
 
@@ -289,10 +289,10 @@ if __name__ == "__main__":
     zenslearn(FC)
     half("qanoonai", "qanoonai/assets/logos/qanoonai-lockup-horizontal-dark.png", 30,
          COPY["qa_head"], COPY["qa_body"],
-         text(32, 206, "16.3M", 30, 600, INK, ls=-1) + text(124, 200, "judgments across", 12, 400, MUTED, MONO)
-         + text(124, 216, "21 jurisdictions", 12, 400, MUTED, MONO),
+         text(32, 206, "16.3M", 30, 600, INK, ls=-1) + text(32, 228, "judgments across", 12, 400, MUTED, MONO)
+         + text(32, 244, "21 jurisdictions", 12, 400, MUTED, MONO),
          "qanoonai", (360, 120, 2520, 1500), "qanoonai.pk →", "QanoonAI: 16.3M judgments across 21 jurisdictions. Raising PKR 14M.",
-         extra=text(32, 240, "Raising PKR 14M", 12, 400, MUTED, MONO))
+         extra=text(214, 206, "PKR 14M", 30, 600, ACCENT, ls=-1) + text(214, 228, "raising now", 12, 400, MUTED, MONO))
     half("coldbot", "coldbot/assets/logos/transparent/lockup-horizontal.png", 26,
          COPY["cb_head"], COPY["cb_body"],
          text(32, 206, "5", 30, 600, INK) + text(62, 200, "AI agents behind", 12, 400, MUTED, MONO)

@@ -1,4 +1,4 @@
-<a href="https://zensbot.com"><img src="assets/hero.svg" width="100%" alt="Hassan Arshad, co-founder of Zensbot. We build AI products used every day by schools, law firms and sales teams."></a>
+<a href="https://zensbot.com"><img src="assets/hero.svg" width="100%" alt="Hassan Arshad, co-founder of Zensbot. We build AI products used by thousands of people every day, across law, education, finance and business."></a>
 
 <p>
   <a href="https://www.linkedin.com/in/hassanarshadd"><img src="assets/contact-linkedin.svg" width="32.6%" alt="LinkedIn: in/hassanarshadd"></a>
