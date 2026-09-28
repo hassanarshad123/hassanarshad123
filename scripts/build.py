@@ -33,7 +33,8 @@ def data_uri(img: Image.Image, fmt: str) -> str:
         img.convert("RGB").save(buf, "JPEG", quality=84, optimize=True, progressive=True)
         mime = "image/jpeg"
     else:
-        img.save(buf, "PNG", optimize=True)
+        # 256 colours is invisible at logo size and cuts the file several times over
+        img.convert("RGBA").quantize(256, method=Image.Quantize.FASTOCTREE).save(buf, "PNG", optimize=True)
         mime = "image/png"
     return f"data:{mime};base64,{base64.b64encode(buf.getvalue()).decode()}"
 
@@ -47,9 +48,23 @@ def shot(name: str, box: tuple[int, int, int, int], w: int, h: int) -> str:
 def logo(path: str, h: int) -> tuple[str, int]:
     """Trim a logo's empty margin and size it to a display height. Returns (uri, display width)."""
     img = Image.open(path if Path(path).is_absolute() else BRANDS / path).convert("RGBA")
-    img = knock_out_white(trim(trim(img)))
+    img = round_tile(knock_out_white(trim(trim(img))))
     w = round(img.width * h / img.height)
     return data_uri(img.resize((w * 2, h * 2), Image.LANCZOS), "PNG"), w
+
+
+def round_tile(img: Image.Image) -> Image.Image:
+    """A logo drawn on a solid coloured square reads as an app icon; give it rounded corners."""
+    c = img.getpixel((0, 0))
+    if c[3] < 250 or min(c[:3]) >= 240:
+        return img
+    from PIL import ImageDraw
+    mask = Image.new("L", img.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, img.width - 1, img.height - 1),
+                                           radius=round(min(img.size) * .18), fill=255)
+    out = img.copy()
+    out.putalpha(mask)
+    return out
 
 
 def knock_out_white(img: Image.Image) -> Image.Image:
@@ -157,10 +172,10 @@ COPY = dict(
     qa_body=["Every answer cites the judgment", "it came from."],
     cb_head="Sales meetings, booked by AI.",
     cb_body=["Finds your buyers, writes in your voice", "and puts the call on your calendar."],
-    wall="Our products, and the companies we've built for",
+    wall="Some of the companies that we have worked with",
 )
 EXTRA = ("AI agents behind every email 5 zensbot.com coldbot.pro qanoonai.pk zenslearn.com → 500+ 10,000+ institutes users 16.3M "
-         "judgments across 21 jurisdictions Backed by PKR 14M in investment")
+         "judgments across 21 jurisdictions Raising PKR 14M LinkedIn Instagram Email in/hassanarshadd @zensbot hassan@zensbot.com ↗")
 ALL_TEXT = " ".join(v if isinstance(v, str) else " ".join(v) for v in COPY.values()) + EXTRA
 
 
@@ -172,20 +187,59 @@ def fonts_css() -> str:
     ])
 
 
+HERO_CYCLE = [("coldbot", "coldbot.pro"), ("qanoonai", "qanoonai.pk"), ("zenslearn", "zenslearn.com")]
+CYCLE_S = 3.2  # seconds each product stays on screen
+
+
+def hero_motion() -> str:
+    """The frame shows each live product in turn. Reduced motion: the first one, still."""
+    n, total = len(HERO_CYCLE), CYCLE_S * len(HERO_CYCLE)
+    hold = 100 / n
+    return f"""
+.cy{{opacity:0}}.cy0{{opacity:1}}
+@media (prefers-reduced-motion: no-preference){{
+ .cy{{animation:cy {total}s cubic-bezier(.16,1,.3,1) infinite both;transform-box:fill-box;transform-origin:50% 0}}
+ .bar{{animation:bar {total}s linear infinite both;transform-box:fill-box;transform-origin:0 0}}
+ {"".join(f".k{i}{{animation-delay:{i * CYCLE_S}s}}" for i in range(n))}
+ @keyframes cy{{0%{{opacity:0;transform:translateY(10px) scale(1.015)}}6%{{opacity:1;transform:none}}
+   {hold - 3:.1f}%{{opacity:1;transform:none}}{hold + 2:.1f}%{{opacity:0}}100%{{opacity:0}}}}
+ @keyframes bar{{0%{{transform:scaleX(0)}}{hold:.1f}%{{transform:scaleX(1)}}{hold + .1:.1f}%,100%{{transform:scaleX(0)}}}}
+}}"""
+
+
 def hero(fc) -> None:
     h = 380
     zb, zbw = logo("zensbot/assets/logos/horizontal.png", 22)
+    fx, fy, fw, fh = 440, 58, 360, 225
+    shots, captions, bars = [], [], []
+    for i, (name, domain) in enumerate(HERO_CYCLE):
+        uri = shot(name, (0, 0, 2880, 1800), fw, fh)
+        shots.append(f'<image class="cy cy{i} k{i}" href="{uri}" x="{fx}" y="{fy}" width="{fw}" height="{fh}" '
+                     f'preserveAspectRatio="xMidYMin slice"/>')
+        captions.append(f'<g class="cy cy{i} k{i}">{text(fx, 322, domain, 13, 400, MUTED, MONO)}</g>')
+        bx = fx + fw - 3 * 34 + i * 34
+        bars.append(f'<rect x="{bx}" y="317" width="28" height="3" rx="1.5" fill="{LINE}"/>'
+                    f'<rect class="bar k{i}" x="{bx}" y="317" width="28" height="3" rx="1.5" fill="{ACCENT}" '
+                    f'transform="scale(0 1)"/>')
+    stage = (
+        # two quiet sheets behind the frame give it depth without decoration
+        f'<rect x="{fx + 26}" y="{fy - 24}" width="{fw - 52}" height="{fh}" rx="10" fill="#fff" stroke="{INK}" stroke-opacity=".06"/>'
+        f'<rect x="{fx + 13}" y="{fy - 12}" width="{fw - 26}" height="{fh}" rx="10" fill="#fff" stroke="{INK}" stroke-opacity=".08"/>'
+        f'<clipPath id="hf"><rect x="{fx}" y="{fy}" width="{fw}" height="{fh}" rx="10"/></clipPath>'
+        f'<rect x="{fx}" y="{fy}" width="{fw}" height="{fh}" rx="10" fill="#fff" filter="url(#sh)"/>'
+        f'<g clip-path="url(#hf)">{"".join(shots)}</g>'
+        f'<rect x="{fx + .5}" y="{fy + .5}" width="{fw - 1}" height="{fh - 1}" rx="9.5" fill="none" stroke="{INK}" stroke-opacity=".10"/>'
+        + "".join(captions) + "".join(bars)
+    )
     o, c = panel(W, h)
     body = o + (
         f'<g class="in d1">{img(zb, 44, 44, zbw, 22)}</g>'
         f'<g class="in d2">{text(42, 164, COPY["name"], 54, 600, INK, ls=-1.8)}'
         f'{lines(44, 206, COPY["hero"], 18, 27)}'
         f'{text(44, 318, "zensbot.com →", 14, 400, ACCENT, MONO)}</g>'
-        f'<g class="in d2">{frame("f1", shot("qanoonai", (0, 0, 2880, 1800), 336, 210), 470, 34, 336, 210)}</g>'
-        f'<g class="in d3">{frame("f2", shot("coldbot", (0, 0, 2880, 1800), 336, 210), 418, 112, 336, 210)}</g>'
-        f'<g class="in d4">{frame("f3", shot("zenslearn", (0, 0, 2880, 1800), 336, 210), 486, 190, 336, 210)}</g>'
+        f'<g class="in d3">{stage}</g>'
     ) + c
-    svg("hero", h, body, fc, "Hassan Arshad, co-founder of Zensbot")
+    svg("hero", h, body, fc + hero_motion(), "Hassan Arshad, co-founder of Zensbot")
 
 
 def zenslearn(fc) -> None:
@@ -212,7 +266,7 @@ def half(name, logo_path, logo_h, head, body_rows, stat, shot_name, box, link, l
         f'<g class="in d1">{img(lg, 32, 36, lw, logo_h)}'
         f'{text(30, 112, head, 23, 600, INK, ls=-.5)}'
         f'{lines(32, 140, body_rows, 14.5, 21)}{stat}{extra}</g>'
-        f'<g class="in d3">{frame(f"h{name}", shot(shot_name, box, 372, 196), 32, 248, 372, 196)}</g>'
+        f'<g class="in d3">{frame(f"h{name}", shot(shot_name, box, 372, 196), 32, 262, 372, 196)}</g>'
     ) + c
     svg_half(name, h, body, label, link)
 
@@ -228,44 +282,6 @@ def svg_half(name, h, body, label, link) -> None:
     (OUT / f"{name}.svg").write_text(doc)
 
 
-def formixx_mark(h: int) -> tuple[str, int]:
-    """Formixx ships only as a wordmark on a black tile. Keep the lettering, recoloured to ink."""
-    src = Image.open(BRANDS.parent / "video-engine/public/images/formixx/logo-on-black.png").convert("RGBA")
-    grey = Image.new("RGB", src.size, "white")
-    grey.paste(src, mask=src.getchannel("A"))
-    grey = grey.convert("L")
-    tile = grey.point(lambda v: 255 if v < 60 else 0).getbbox()
-    ix, iy = (tile[2] - tile[0]) // 10, (tile[3] - tile[1]) // 10
-    inner = grey.crop((tile[0] + ix, tile[1] + iy, tile[2] - ix, tile[3] - iy))
-    ink = inner.point(lambda v: 255 if v > 140 else 0)
-    ink = ink.crop(ink.getbbox())
-    mark = Image.new("RGBA", ink.size, INK)
-    mark.putalpha(ink)
-    w = round(mark.width * h / mark.height)
-    return data_uri(mark.resize((w * 2, h * 2), Image.LANCZOS), "PNG"), w
-
-
-def wall(fc) -> None:
-    h = 150
-    items = [
-        ("zensbot/assets/logos/horizontal.png", 24),
-        ("coldbot/assets/logos/transparent/lockup-horizontal.png", 24),
-        ("qanoonai/assets/logos/qanoonai-lockup-horizontal-dark.png", 30),
-        ("lms/assets/logos/masters/lockup-horizontal-transparent.png", 22),
-        ("ict/assets/logos/ict-logo.png", 34),
-    ]
-    logos = [(*logo(p, lh), lh) for p, lh in items]
-    logos.insert(4, (*formixx_mark(24), 24))
-    gap = (W - 88 - sum(lw for _, lw, _ in logos)) / (len(logos) - 1)
-    x, row = 44.0, []
-    for i, (uri, lw, lh) in enumerate(logos):
-        row.append(f'<g class="in d{min(4, 1 + i // 2)}">{img(uri, round(x), round(96 - lh / 2), lw, lh)}</g>')
-        x += lw + gap
-    o, c = panel(W, h)
-    body = o + text(44, 46, COPY["wall"], 15, 400, MUTED) + "".join(row) + c
-    svg("logos", h, body, fc, "Zensbot, ColdBot, QanoonAI, ZensLearn, Formixx, ICT")
-
-
 if __name__ == "__main__":
     OUT.mkdir(exist_ok=True)
     FC = fonts_css()
@@ -275,12 +291,14 @@ if __name__ == "__main__":
          COPY["qa_head"], COPY["qa_body"],
          text(32, 206, "16.3M", 30, 600, INK, ls=-1) + text(124, 200, "judgments across", 12, 400, MUTED, MONO)
          + text(124, 216, "21 jurisdictions", 12, 400, MUTED, MONO),
-         "qanoonai", (360, 120, 2520, 1500), "qanoonai.pk →", "QanoonAI: 16.3M judgments across 21 jurisdictions")
+         "qanoonai", (360, 120, 2520, 1500), "qanoonai.pk →", "QanoonAI: 16.3M judgments across 21 jurisdictions. Raising PKR 14M.",
+         extra=text(32, 240, "Raising PKR 14M", 12, 400, MUTED, MONO))
     half("coldbot", "coldbot/assets/logos/transparent/lockup-horizontal.png", 26,
          COPY["cb_head"], COPY["cb_body"],
          text(32, 206, "5", 30, 600, INK) + text(62, 200, "AI agents behind", 12, 400, MUTED, MONO)
          + text(62, 216, "every email", 12, 400, MUTED, MONO),
          "coldbot", (360, 120, 2520, 1500), "coldbot.pro →", "ColdBot: sales meetings, booked by AI")
-    wall(FC)
+    import extras
+    extras.build(FC)
     for p in sorted(OUT.glob("*.svg")):
         print(f"{p.stat().st_size // 1024:>5} KB  {p.name}")
