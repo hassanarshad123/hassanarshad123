@@ -1,203 +1,286 @@
-"""Generate the product cards, client marquee and stack strip as animated SVGs."""
+"""Build the profile panels as self-contained SVGs.
+
+Real product screenshots and real brand logos are embedded as images, and the
+Zensbot brand fonts (Outfit, JetBrains Mono) are embedded as subsets, so the
+panels render the same on github.com as they do here.
+
+Run: uv run --with fonttools --with pillow python scripts/build.py
+"""
+import base64
+import io
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-OUT = Path(__file__).parent.parent / "assets"
-SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif"
-MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace"
-W, H = 410, 250
+from fontTools import subset
+from PIL import Image
+
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "assets"
+SRC = ROOT / "src"
+BRANDS = Path.home() / "Developer/repos/ads-factory/businesses"
+FONTS = Path.home() / "Developer/repos/ads-factory/businesses/zensbot-course/assets/fonts"
+
+INK, MUTED, LINE, PANEL, ACCENT = "#0E1116", "#5B6472", "#E3E6EB", "#F6F7F9", "#1765FD"
+SANS, MONO = "Outfit", "JBMono"
+W = 840
 
 
-def counter(frames: list[str], x: int, y: int, color: str) -> str:
-    """Number that counts up once on load, then holds. Without animation it shows the final value."""
-    n, dur, parts = len(frames), 2.2, []
-    for i, label in enumerate(frames):
-        # frame i shows during [ (i+1)/(n+1), (i+2)/(n+1) ); the first slot is a short pause on frame 0
-        slots = [0] * (n + 1)
-        slots[i + 1] = 1
-        if i == 0:
-            slots[0] = 1
-        vals = ";".join(map(str, slots)) + (";1" if i == n - 1 else ";0")
-        keys = ";".join(f"{j / (n + 1):.3f}" for j in range(n + 1)) + ";1"
-        base = "1" if i == n - 1 else "0"
-        parts.append(
-            f'<text x="{x}" y="{y}" font-family="{SANS}" font-size="46" font-weight="800" '
-            f'letter-spacing="-1.5" fill="{color}" opacity="{base}">{escape(label)}'
-            f'<animate attributeName="opacity" dur="{dur}s" begin="0s" fill="freeze" '
-            f'calcMode="discrete" values="{vals}" keyTimes="{keys}"/></text>'
-        )
-    return "\n".join(parts)
+# ---------- assets ----------
+
+def data_uri(img: Image.Image, fmt: str) -> str:
+    buf = io.BytesIO()
+    if fmt == "JPEG":
+        img.convert("RGB").save(buf, "JPEG", quality=84, optimize=True, progressive=True)
+        mime = "image/jpeg"
+    else:
+        img.save(buf, "PNG", optimize=True)
+        mime = "image/png"
+    return f"data:{mime};base64,{base64.b64encode(buf.getvalue()).decode()}"
 
 
-def steps(labels: list[str], y: int, color: str) -> str:
-    """Pipeline chips that light up one after another, on a loop."""
-    n, x, out = len(labels), 28, []
-    period = 1.1 * n + 1.5
-    for i, label in enumerate(labels):
-        w = 14 + 7.6 * len(label)
-        t0, t1 = (1.1 * i) / period, (1.1 * i + 0.9) / period
-        out.append(
-            f'<g><rect x="{x}" y="{y}" width="{w:.0f}" height="26" rx="13" fill="{color}" '
-            f'fill-opacity="0.08" stroke="{color}" stroke-opacity="0.35">'
-            f'<animate attributeName="fill-opacity" dur="{period:.1f}s" repeatCount="indefinite" '
-            f'values="0.08;0.08;0.55;0.08;0.08" keyTimes="0;{t0:.3f};{(t0 + t1) / 2:.3f};{t1:.3f};1"/></rect>'
-            f'<text x="{x + w / 2:.0f}" y="{y + 17}" text-anchor="middle" font-family="{MONO}" '
-            f'font-size="12" fill="#E2E8F0">{escape(label)}</text></g>'
-        )
-        x += w + 18
-        if i < n - 1:
-            out.append(f'<text x="{x - 13:.0f}" y="{y + 17}" font-family="{MONO}" font-size="12" fill="#475569">›</text>')
-    return "\n".join(out)
+def shot(name: str, box: tuple[int, int, int, int], w: int, h: int) -> str:
+    """Crop a site screenshot and size it for 2x display."""
+    img = Image.open(SRC / f"hi-{name}.png").crop(box)
+    return data_uri(img.resize((w * 2, h * 2), Image.LANCZOS), "JPEG")
 
 
-def chips(labels: list[str], y: int, color: str) -> str:
-    x, out = 28, []
-    for label in labels:
-        w = 16 + 7.4 * len(label)
-        out.append(
-            f'<rect x="{x}" y="{y}" width="{w:.0f}" height="24" rx="6" fill="#fff" fill-opacity="0.04" '
-            f'stroke="#fff" stroke-opacity="0.08"/><text x="{x + 8}" y="{y + 16}" font-family="{MONO}" '
-            f'font-size="12" fill="{color}">{escape(label)}</text>'
-        )
-        x += w + 8
-    return "\n".join(out)
+def logo(path: str, h: int) -> tuple[str, int]:
+    """Trim a logo's empty margin and size it to a display height. Returns (uri, display width)."""
+    img = Image.open(path if Path(path).is_absolute() else BRANDS / path).convert("RGBA")
+    img = knock_out_white(trim(trim(img)))
+    w = round(img.width * h / img.height)
+    return data_uri(img.resize((w * 2, h * 2), Image.LANCZOS), "PNG"), w
 
 
-def card(slug, index, name, accent, lines, body, link, badge="LIVE"):
-    tagline = "\n".join(
-        f'<text x="28" y="{104 + 20 * i}" font-family="{SANS}" font-size="14.5" fill="#94A3B8">{escape(t)}</text>'
-        for i, t in enumerate(lines)
-    )
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}" role="img" aria-label="{escape(name)}: {escape(' '.join(lines))}">
-<defs>
-  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B0E17"/><stop offset="1" stop-color="#111626"/></linearGradient>
-  <radialGradient id="glow" cx="1" cy="0" r="1"><stop offset="0" stop-color="{accent}" stop-opacity="0.28"/><stop offset="0.6" stop-color="{accent}" stop-opacity="0"/></radialGradient>
-  <clipPath id="c"><rect width="{W}" height="{H}" rx="18"/></clipPath>
-</defs>
-<g clip-path="url(#c)">
-  <rect width="{W}" height="{H}" fill="url(#bg)"/>
-  <rect width="{W}" height="{H}" fill="url(#glow)"><animate attributeName="opacity" dur="5s" repeatCount="indefinite" values="0.7;1;0.7"/></rect>
-  <rect width="{W}" height="3" fill="{accent}"/>
-  <text x="28" y="40" font-family="{MONO}" font-size="11" letter-spacing="2" fill="#64748B">{index}</text>
-  <g transform="translate({W - 28} 30)">
-    <rect x="{-(30 + 7.3 * len(badge)):.0f}" y="-2" width="{30 + 7.3 * len(badge):.0f}" height="20" rx="10" fill="{accent}" fill-opacity="0.12"/>
-    <circle cx="{-(19 + 7.3 * len(badge)):.0f}" cy="8" r="3.5" fill="{accent}"><animate attributeName="opacity" dur="1.6s" repeatCount="indefinite" values="1;0.2;1"/></circle>
-    <text x="-10" y="12" text-anchor="end" font-family="{MONO}" font-size="10.5" letter-spacing="1" fill="{accent}">{badge}</text>
-  </g>
-  <text x="26" y="78" font-family="{SANS}" font-size="30" font-weight="800" letter-spacing="-0.8" fill="#F8FAFC">{escape(name)}</text>
-  {tagline}
-  {body}
-  <text x="28" y="{H - 20}" font-family="{MONO}" font-size="12" fill="{accent}">→ {escape(link)}</text>
-</g>
-<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="17.5" fill="none" stroke="#fff" stroke-opacity="0.09"/>
-</svg>'''
-    (OUT / f"{slug}.svg").write_text(svg)
+def knock_out_white(img: Image.Image) -> Image.Image:
+    """Some logo files sit on a solid white box. Make that box transparent, fading the edge."""
+    if img.getpixel((0, 0))[3] < 250 or min(img.getpixel((0, 0))[:3]) < 240:
+        return img
+    rgb = img.convert("RGB")
+    lightness = rgb.convert("L").point(lambda v: 0 if v >= 250 else 255 if v <= 200 else round((250 - v) * 5.1))
+    out = img.copy()
+    out.putalpha(lightness)
+    return out
 
 
-def stat_label(text: str, x: int, y: int) -> str:
-    return f'<text x="{x}" y="{y}" font-family="{SANS}" font-size="13" fill="#CBD5E1">{escape(text)}</text>'
+def trim(img: Image.Image) -> Image.Image:
+    """Crop away transparent margin, then any solid margin matching the corner colour."""
+    bbox = img.getchannel("A").point(lambda a: 255 if a > 10 else 0).getbbox()
+    img = img.crop(bbox) if bbox else img
+    corner = img.getpixel((0, 0))
+    if corner[3] < 10:
+        return img
+    diff = Image.new("L", img.size)
+    px, dp = img.load(), diff.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            p = px[x, y]
+            if p[3] > 10 and sum(abs(p[i] - corner[i]) for i in range(3)) > 60:
+                dp[x, y] = 255
+    bbox = diff.getbbox()
+    return img.crop(bbox) if bbox else img
 
 
-card(
-    "coldbot", "01 / SALES", "ColdBot", "#22D3EE",
-    ["Finds the right buyers, writes emails that", "don't sound like AI, and books the meetings."],
-    steps(["Find", "Verify", "Write", "Send", "Book"], 160, "#22D3EE"),
-    "coldbot.pro",
+def font_face(file: str, family: str, weight: int, text: str) -> str:
+    opts = subset.Options()
+    opts.layout_features = ["kern", "liga"]
+    font = subset.load_font(str(FONTS / file), opts)
+    sub = subset.Subsetter(opts)
+    sub.populate(text=text)
+    sub.subset(font)
+    buf = io.BytesIO()
+    font.save(buf)
+    b64 = base64.b64encode(buf.getvalue()).decode()
+    return (f"@font-face{{font-family:{family};font-weight:{weight};"
+            f"src:url(data:font/ttf;base64,{b64}) format('truetype');}}")
+
+
+# ---------- svg primitives ----------
+
+def text(x, y, s, size, weight=400, fill=INK, family=SANS, ls=0.0, anchor="start") -> str:
+    return (f'<text x="{x}" y="{y}" font-family="{family}" font-size="{size}" font-weight="{weight}" '
+            f'fill="{fill}" letter-spacing="{ls}" text-anchor="{anchor}">{escape(s)}</text>')
+
+
+def lines(x, y, rows, size, step, fill=MUTED, weight=400) -> str:
+    return "".join(text(x, y + i * step, r, size, weight, fill) for i, r in enumerate(rows))
+
+
+def frame(uid, uri, x, y, w, h, r=10) -> str:
+    """A real screenshot with rounded corners, a hairline edge and a soft tinted shadow."""
+    return (f'<clipPath id="{uid}"><rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}"/></clipPath>'
+            f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" fill="#fff" filter="url(#sh)"/>'
+            f'<image href="{uri}" x="{x}" y="{y}" width="{w}" height="{h}" clip-path="url(#{uid})" '
+            f'preserveAspectRatio="xMidYMin slice"/>'
+            f'<rect x="{x + .5}" y="{y + .5}" width="{w - 1}" height="{h - 1}" rx="{r - .5}" fill="none" '
+            f'stroke="#0E1116" stroke-opacity=".10"/>')
+
+
+def img(uri, x, y, w, h) -> str:
+    return f'<image href="{uri}" x="{x}" y="{y}" width="{w}" height="{h}"/>'
+
+
+STYLE_MOTION = """
+@media (prefers-reduced-motion: no-preference){
+ .in{animation:rise 1s cubic-bezier(.16,1,.3,1) both}
+ .d1{animation-delay:.08s}.d2{animation-delay:.2s}.d3{animation-delay:.34s}.d4{animation-delay:.48s}
+ @keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+}"""
+
+
+def svg(name, h, body, fonts, label) -> None:
+    doc = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W if name != "half" else 414} {h}" '
+           f'role="img" aria-label="{escape(label)}">'
+           f"<style>{fonts}{STYLE_MOTION}</style>"
+           '<defs><filter id="sh" x="-20%" y="-20%" width="140%" height="160%">'
+           '<feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#1B2B4B" flood-opacity=".14"/>'
+           "</filter></defs>"
+           f"{body}</svg>")
+    (OUT / f"{name}.svg").write_text(doc)
+
+
+def panel(w, h, clip_id="p") -> tuple[str, str]:
+    """Rounded panel; returns (open, close) so content is clipped to it."""
+    return (f'<clipPath id="{clip_id}"><rect width="{w}" height="{h}" rx="16"/></clipPath>'
+            f'<g clip-path="url(#{clip_id})"><rect width="{w}" height="{h}" fill="{PANEL}"/>',
+            f'</g><rect x=".5" y=".5" width="{w - 1}" height="{h - 1}" rx="15.5" fill="none" stroke="{LINE}"/>')
+
+
+# ---------- panels ----------
+
+COPY = dict(
+    name="Hassan Arshad",
+    hero=["I co-founded Zensbot. We build AI", "products used every day by schools,", "law firms and sales teams."],
+    zl_head="The LMS 500+ institutes run on.",
+    zl_body=["Web, mobile and desktop apps with live classes,", "all under each institute's own brand."],
+    qa_head="AI legal research for Pakistan.",
+    qa_body=["Every answer cites the judgment", "it came from."],
+    cb_head="Sales meetings, booked by AI.",
+    cb_body=["Finds your buyers, writes in your voice", "and puts the call on your calendar."],
+    wall="Our products, and the companies we've built for",
 )
-card(
-    "qanoonai", "02 / LEGAL", "QanoonAI", "#F59E0B",
-    ["Pakistan's first AI legal intelligence platform,", "for citizens, lawyers and judges."],
-    counter(["0", "2.4M", "6.1M", "9.8M", "13.2M", "16.3M"], 28, 192, "#FCD34D")
-    + stat_label("court judgments", 186, 176)
-    + stat_label("21 jurisdictions", 186, 194),
-    "qanoonai.pk", badge="FUNDED",
-)
-card(
-    "zenslearn", "03 / EDUCATION", "ZensLearn", "#34D399",
-    ["White-label LMS: web, mobile, desktop and", "live classes, under the institute's brand."],
-    counter(["0", "120+", "260+", "390+", "500+"], 28, 192, "#6EE7B7")
-    + stat_label("institutes", 186, 176)
-    + stat_label("10,000+ users", 186, 194),
-    "zenslearn.com",
-)
-card(
-    "opensource", "04 / OPEN SOURCE", "Built in public", "#A78BFA",
-    ["Tools we use ourselves, free for anyone.", "Fork them, ship them, send a pull request."],
-    chips(["ZensLoom · Rust", "ICT LMS · Vue", "DeerFlow · Py"], 160, "#C4B5FD"),
-    "github.com/hassanarshad123", badge="MIT",
-)
+EXTRA = ("AI agents behind every email 5 zensbot.com coldbot.pro qanoonai.pk zenslearn.com → 500+ 10,000+ institutes users 16.3M "
+         "judgments across 21 jurisdictions Backed by PKR 14M in investment")
+ALL_TEXT = " ".join(v if isinstance(v, str) else " ".join(v) for v in COPY.values()) + EXTRA
 
 
-def marquee() -> None:
-    """Clients we've built for, scrolling in a seamless loop."""
-    clients = ["Formixx", "ICT Pakistan", "Atlas Engineering", "MATH LLC", "Penguin Swim School",
-               "PrintEazy", "TSFA Creative", "Happyness365", "Dayemens"]
-    # One text run, forced to an exact length, so the copy can sit flush behind it.
-    spans = "".join(
-        f'<tspan fill="#E2E8F0" fill-opacity="0.85">{escape(c)}</tspan>'
-        f'<tspan fill="#6366F1" font-size="16" dx="0">\u2003\u2003\u2726\u2003\u2003</tspan>'
-        for c in clients
-    )
-    loop = int(sum(11.2 * len(c) + 100 for c in clients))
-    run = (f'<text y="0" font-family="{SANS}" font-size="20" font-weight="700" '
-           f'textLength="{loop}" lengthAdjust="spacing" xml:space="preserve">{spans}</text>')
-    row = run.replace('<text y', '<text x="0" y', 1)
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 130" width="840" height="130" role="img" aria-label="Clients: {escape(', '.join(clients))}">
-<defs>
-  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B0E17"/><stop offset="1" stop-color="#111626"/></linearGradient>
-  <linearGradient id="fade" x1="0" y1="0" x2="1" y2="0">
-    <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.12" stop-color="#fff"/>
-    <stop offset="0.88" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
-  </linearGradient>
-  <mask id="m"><rect width="840" height="130" fill="url(#fade)"/></mask>
-  <clipPath id="c"><rect width="840" height="130" rx="18"/></clipPath>
-</defs>
-<g clip-path="url(#c)">
-  <rect width="840" height="130" fill="url(#bg)"/>
-  <text x="420" y="36" text-anchor="middle" font-family="{MONO}" font-size="11" letter-spacing="3" fill="#64748B">ZENSBOT HAS SHIPPED FOR</text>
-  <g mask="url(#m)"><g transform="translate(0 86)"><g>
-    <animateTransform attributeName="transform" type="translate" from="0 0" to="{-loop:.0f} 0" dur="{loop / 45:.0f}s" repeatCount="indefinite"/>
-    {row}
-    <g transform="translate({loop:.0f} 0)">{row}</g>
-  </g></g></g>
-</g>
-<rect x="0.5" y="0.5" width="839" height="129" rx="17.5" fill="none" stroke="#fff" stroke-opacity="0.09"/>
-</svg>'''
-    (OUT / "clients.svg").write_text(svg)
+def fonts_css() -> str:
+    return "".join([
+        font_face("Outfit-Regular.ttf", SANS, 400, ALL_TEXT),
+        font_face("Outfit-SemiBold.ttf", SANS, 600, ALL_TEXT),
+        font_face("JetBrainsMono-Regular.ttf", MONO, 400, ALL_TEXT),
+    ])
 
 
-def stack() -> None:
-    groups = [
-        ("AI", "#A78BFA", ["OpenAI", "Claude", "RAG", "Agents"]),
-        ("Backend", "#22D3EE", ["Python", "FastAPI", "Rust", "Celery"]),
-        ("Frontend", "#34D399", ["Next.js", "TypeScript", "Flutter", "Electron"]),
-        ("Infra", "#F59E0B", ["AWS", "Terraform", "Postgres", "Vercel"]),
+def hero(fc) -> None:
+    h = 380
+    zb, zbw = logo("zensbot/assets/logos/horizontal.png", 22)
+    o, c = panel(W, h)
+    body = o + (
+        f'<g class="in d1">{img(zb, 44, 44, zbw, 22)}</g>'
+        f'<g class="in d2">{text(42, 164, COPY["name"], 54, 600, INK, ls=-1.8)}'
+        f'{lines(44, 206, COPY["hero"], 18, 27)}'
+        f'{text(44, 318, "zensbot.com →", 14, 400, ACCENT, MONO)}</g>'
+        f'<g class="in d2">{frame("f1", shot("qanoonai", (0, 0, 2880, 1800), 336, 210), 470, 34, 336, 210)}</g>'
+        f'<g class="in d3">{frame("f2", shot("coldbot", (0, 0, 2880, 1800), 336, 210), 418, 112, 336, 210)}</g>'
+        f'<g class="in d4">{frame("f3", shot("zenslearn", (0, 0, 2880, 1800), 336, 210), 486, 190, 336, 210)}</g>'
+    ) + c
+    svg("hero", h, body, fc, "Hassan Arshad, co-founder of Zensbot")
+
+
+def zenslearn(fc) -> None:
+    h = 330
+    lg, lw = logo("lms/assets/logos/masters/lockup-horizontal-transparent.png", 24)
+    o, c = panel(W, h)
+    stats = (text(44, 246, "500+", 34, 600, INK, ls=-1) + text(44, 270, "institutes", 13, 400, MUTED, MONO)
+             + text(170, 246, "10,000+", 34, 600, INK, ls=-1) + text(170, 270, "users", 13, 400, MUTED, MONO))
+    body = o + (
+        f'<g class="in d1">{img(lg, 44, 42, lw, 24)}'
+        f'{text(42, 124, COPY["zl_head"], 28, 600, INK, ls=-.6)}'
+        f'{lines(44, 156, COPY["zl_body"], 15.5, 23)}{stats}</g>'
+        f'<g class="in d3">{frame("z1", shot("zenslearn", (240, 760, 2640, 2140), 400, 230), 440, 100, 400, 230)}</g>'
+        f'{text(796, 60, "zenslearn.com →", 13, 400, ACCENT, MONO, anchor="end")}'
+    ) + c
+    svg("zenslearn", h, body, fc, "ZensLearn: 500+ institutes, 10,000+ users")
+
+
+def half(name, logo_path, logo_h, head, body_rows, stat, shot_name, box, link, label, extra="") -> None:
+    w, h = 414, 440
+    lg, lw = logo(logo_path, logo_h)
+    o, c = panel(w, h, f"p{name}")
+    body = o + (
+        f'<g class="in d1">{img(lg, 32, 36, lw, logo_h)}'
+        f'{text(30, 112, head, 23, 600, INK, ls=-.5)}'
+        f'{lines(32, 140, body_rows, 14.5, 21)}{stat}{extra}</g>'
+        f'<g class="in d3">{frame(f"h{name}", shot(shot_name, box, 372, 196), 32, 248, 372, 196)}</g>'
+    ) + c
+    svg_half(name, h, body, label, link)
+
+
+def svg_half(name, h, body, label, link) -> None:
+    body += text(382, 54, link, 12.5, 400, ACCENT, MONO, anchor="end")
+    doc = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 414 {h}" role="img" aria-label="{escape(label)}">'
+           f"<style>{FC}{STYLE_MOTION}</style>"
+           '<defs><filter id="sh" x="-20%" y="-20%" width="140%" height="160%">'
+           '<feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#1B2B4B" flood-opacity=".14"/>'
+           "</filter></defs>"
+           f"{body}</svg>")
+    (OUT / f"{name}.svg").write_text(doc)
+
+
+def formixx_mark(h: int) -> tuple[str, int]:
+    """Formixx ships only as a wordmark on a black tile. Keep the lettering, recoloured to ink."""
+    src = Image.open(BRANDS.parent / "video-engine/public/images/formixx/logo-on-black.png").convert("RGBA")
+    grey = Image.new("RGB", src.size, "white")
+    grey.paste(src, mask=src.getchannel("A"))
+    grey = grey.convert("L")
+    tile = grey.point(lambda v: 255 if v < 60 else 0).getbbox()
+    ix, iy = (tile[2] - tile[0]) // 10, (tile[3] - tile[1]) // 10
+    inner = grey.crop((tile[0] + ix, tile[1] + iy, tile[2] - ix, tile[3] - iy))
+    ink = inner.point(lambda v: 255 if v > 140 else 0)
+    ink = ink.crop(ink.getbbox())
+    mark = Image.new("RGBA", ink.size, INK)
+    mark.putalpha(ink)
+    w = round(mark.width * h / mark.height)
+    return data_uri(mark.resize((w * 2, h * 2), Image.LANCZOS), "PNG"), w
+
+
+def wall(fc) -> None:
+    h = 150
+    items = [
+        ("zensbot/assets/logos/horizontal.png", 24),
+        ("coldbot/assets/logos/transparent/lockup-horizontal.png", 24),
+        ("qanoonai/assets/logos/qanoonai-lockup-horizontal-dark.png", 30),
+        ("lms/assets/logos/masters/lockup-horizontal-transparent.png", 22),
+        ("ict/assets/logos/ict-logo.png", 34),
     ]
-    col_w, out = 840 / 4, []
-    for gi, (title, color, items) in enumerate(groups):
-        x0 = gi * col_w + 24
-        out.append(f'<text x="{x0:.0f}" y="40" font-family="{MONO}" font-size="11" letter-spacing="2.5" fill="{color}">{title.upper()}</text>')
-        for ii, item in enumerate(items):
-            y = 70 + ii * 30
-            delay = gi * 0.25 + ii * 0.12
-            out.append(
-                f'<g><animate attributeName="opacity" begin="0s" dur="{delay + 0.5:.2f}s" fill="freeze" values="0;0;1" keyTimes="0;{delay / (delay + 0.5):.3f};1"/>'
-                f'<rect x="{x0:.0f}" y="{y - 15}" width="3" height="18" rx="1.5" fill="{color}"/>'
-                f'<text x="{x0 + 12:.0f}" y="{y}" font-family="{SANS}" font-size="15" font-weight="600" fill="#E2E8F0">{escape(item)}</text></g>'
-            )
-    svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 200" width="840" height="200" role="img" aria-label="Tech stack">
-<defs>
-  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B0E17"/><stop offset="1" stop-color="#111626"/></linearGradient>
-  <clipPath id="c"><rect width="840" height="200" rx="18"/></clipPath>
-</defs>
-<g clip-path="url(#c)"><rect width="840" height="200" fill="url(#bg)"/>
-{chr(10).join(out)}
-</g>
-<rect x="0.5" y="0.5" width="839" height="199" rx="17.5" fill="none" stroke="#fff" stroke-opacity="0.09"/>
-</svg>'''
-    (OUT / "stack.svg").write_text(svg)
+    logos = [(*logo(p, lh), lh) for p, lh in items]
+    logos.insert(4, (*formixx_mark(24), 24))
+    gap = (W - 88 - sum(lw for _, lw, _ in logos)) / (len(logos) - 1)
+    x, row = 44.0, []
+    for i, (uri, lw, lh) in enumerate(logos):
+        row.append(f'<g class="in d{min(4, 1 + i // 2)}">{img(uri, round(x), round(96 - lh / 2), lw, lh)}</g>')
+        x += lw + gap
+    o, c = panel(W, h)
+    body = o + text(44, 46, COPY["wall"], 15, 400, MUTED) + "".join(row) + c
+    svg("logos", h, body, fc, "Zensbot, ColdBot, QanoonAI, ZensLearn, Formixx, ICT")
 
 
-marquee()
-stack()
-print(sorted(p.name for p in OUT.iterdir()))
+if __name__ == "__main__":
+    OUT.mkdir(exist_ok=True)
+    FC = fonts_css()
+    hero(FC)
+    zenslearn(FC)
+    half("qanoonai", "qanoonai/assets/logos/qanoonai-lockup-horizontal-dark.png", 30,
+         COPY["qa_head"], COPY["qa_body"],
+         text(32, 206, "16.3M", 30, 600, INK, ls=-1) + text(124, 200, "judgments across", 12, 400, MUTED, MONO)
+         + text(124, 216, "21 jurisdictions", 12, 400, MUTED, MONO),
+         "qanoonai", (360, 120, 2520, 1500), "qanoonai.pk →", "QanoonAI: 16.3M judgments across 21 jurisdictions")
+    half("coldbot", "coldbot/assets/logos/transparent/lockup-horizontal.png", 26,
+         COPY["cb_head"], COPY["cb_body"],
+         text(32, 206, "5", 30, 600, INK) + text(62, 200, "AI agents behind", 12, 400, MUTED, MONO)
+         + text(62, 216, "every email", 12, 400, MUTED, MONO),
+         "coldbot", (360, 120, 2520, 1500), "coldbot.pro →", "ColdBot: sales meetings, booked by AI")
+    wall(FC)
+    for p in sorted(OUT.glob("*.svg")):
+        print(f"{p.stat().st_size // 1024:>5} KB  {p.name}")
