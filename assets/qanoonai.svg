@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 410 250" width="410" height="250" role="img" aria-label="QanoonAI: Pakistan's first AI legal intelligence platform, for citizens, lawyers and judges.">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B0E17"/><stop offset="1" stop-color="#111626"/></linearGradient>
+  <radialGradient id="glow" cx="1" cy="0" r="1"><stop offset="0" stop-color="#F59E0B" stop-opacity="0.28"/><stop offset="0.6" stop-color="#F59E0B" stop-opacity="0"/></radialGradient>
+  <clipPath id="c"><rect width="410" height="250" rx="18"/></clipPath>
+</defs>
+<g clip-path="url(#c)">
+  <rect width="410" height="250" fill="url(#bg)"/>
+  <rect width="410" height="250" fill="url(#glow)"><animate attributeName="opacity" dur="5s" repeatCount="indefinite" values="0.7;1;0.7"/></rect>
+  <rect width="410" height="3" fill="#F59E0B"/>
+  <text x="28" y="40" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" letter-spacing="2" fill="#64748B">02 / LEGAL</text>
+  <g transform="translate(382 30)">
+    <rect x="-74" y="-2" width="74" height="20" rx="10" fill="#F59E0B" fill-opacity="0.12"/>
+    <circle cx="-63" cy="8" r="3.5" fill="#F59E0B"><animate attributeName="opacity" dur="1.6s" repeatCount="indefinite" values="1;0.2;1"/></circle>
+    <text x="-10" y="12" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="10.5" letter-spacing="1" fill="#F59E0B">FUNDED</text>
+  </g>
+  <text x="26" y="78" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="30" font-weight="800" letter-spacing="-0.8" fill="#F8FAFC">QanoonAI</text>
+  <text x="28" y="104" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="14.5" fill="#94A3B8">Pakistan's first AI legal intelligence platform,</text>
+<text x="28" y="124" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="14.5" fill="#94A3B8">for citizens, lawyers and judges.</text>
+  <text x="28" y="192" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="46" font-weight="800" letter-spacing="-1.5" fill="#FCD34D" opacity="0">0<animate attributeName="opacity" dur="2.2s" begin="0s" fill="freeze" calcMode="discrete" values="1;1;0;0;0;0;0;0" keyTimes="0.000;0.143;0.286;0.429;0.571;0.714;0.857;1"/></text>
+<text x="28" y="192" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="46" font-weight="800" letter-spacing="-1.5" fill="#FCD34D" opacity="0">2.4M<animate attributeName="opacity" dur="2.2s" begin="0s" fill="freeze" calcMode="discrete" values="0;0;1;0;0;0;0;0" keyTimes="0.000;0.143;0.286;0.429;0.571;0.714;0.857;1"/></text>
+<text x="28" y="192" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="46" font-weight="800" letter-spacing="-1.5" fill="#FCD34D" opacity="0">6.1M<animate attributeName="opacity" dur="2.2s" begin="0s" fill="freeze" calcMode="discrete" values="0;0;0;1;0;0;0;0" keyTimes="0.000;0.143;0.286;0.429;0.571;0.714;0.857;1"/></text>
+<text x="28" y="192" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="46" font-weight="800" letter-spacing="-1.5" fill="#FCD34D" opacity="0">9.8M<animate attributeName="opacity" dur="2.2s" begin="0s" fill="freeze" calcMode="discrete" values="0;0;0;0;1;0;0;0" keyTimes="0.000;0.143;0.286;0.429;0.571;0.714;0.857;1"/></text>
+<text x="28" y="192" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="46" font-weight="800" letter-spacing="-1.5" fill="#FCD34D" opacity="0">13.2M<animate attributeName="opacity" dur="2.2s" begin="0s" fill="freeze" calcMode="discrete" values="0;0;0;0;0;1;0;0" keyTimes="0.000;0.143;0.286;0.429;0.571;0.714;0.857;1"/></text>
+<text x="28" y="192" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="46" font-weight="800" letter-spacing="-1.5" fill="#FCD34D" opacity="1">16.3M<animate attributeName="opacity" dur="2.2s" begin="0s" fill="freeze" calcMode="discrete" values="0;0;0;0;0;0;1;1" keyTimes="0.000;0.143;0.286;0.429;0.571;0.714;0.857;1"/></text><text x="186" y="176" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="13" fill="#CBD5E1">court judgments</text><text x="186" y="194" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="13" fill="#CBD5E1">21 jurisdictions</text>
+  <text x="28" y="230" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#F59E0B">→ qanoonai.pk</text>
+</g>
+<rect x="0.5" y="0.5" width="409" height="249" rx="17.5" fill="none" stroke="#fff" stroke-opacity="0.09"/>
+</svg>

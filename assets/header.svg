@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 320" width="840" height="320" role="img" aria-label="Hassan Arshad, co-founder and CEO of Zensbot. I build AI that books sales meetings, reads 16 million court judgments, and runs 500+ institutes.">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07090F"/>
+      <stop offset="1" stop-color="#0E1220"/>
+    </linearGradient>
+    <linearGradient id="name" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.55" stop-color="#C7D2FE"/>
+      <stop offset="1" stop-color="#67E8F9"/>
+    </linearGradient>
+    <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#fff" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="core" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#A5B4FC"/>
+      <stop offset="0.45" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#6366F1" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" fill="none" stroke="#FFFFFF" stroke-opacity="0.045"/>
+    </pattern>
+    <clipPath id="card"><rect width="840" height="320" rx="20"/></clipPath>
+    <clipPath id="t0"><rect x="186" y="200" height="40" width="0"><animate attributeName="width" dur="12s" repeatCount="indefinite" values="0;388;388;0;0" keyTimes="0;0.1167;0.2833;0.3167;1"/></rect></clipPath>
+    <clipPath id="t1"><rect x="186" y="200" height="40" width="0"><animate attributeName="width" dur="12s" repeatCount="indefinite" values="0;0;453;453;0;0" keyTimes="0;0.3333;0.45;0.6167;0.65;1"/></rect></clipPath>
+    <clipPath id="t2"><rect x="186" y="200" height="40" width="0"><animate attributeName="width" dur="12s" repeatCount="indefinite" values="0;0;413;413;0;0" keyTimes="0;0.6667;0.7833;0.95;0.9833;1"/></rect></clipPath>
+    <clipPath id="nameclip"><text x="56" y="128" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="64" font-weight="800" letter-spacing="-2">Hassan Arshad</text></clipPath>
+  </defs>
+
+  <g clip-path="url(#card)">
+    <rect width="840" height="320" fill="url(#bg)"/>
+    <rect width="840" height="320" fill="url(#grid)"/>
+    <circle cx="690" cy="160" r="190" fill="url(#glow)">
+      <animate attributeName="r" dur="6s" repeatCount="indefinite" values="170;200;170"/>
+    </circle>
+
+    <!-- orbit system: three products circling one core -->
+    <g transform="translate(690 160)">
+      <ellipse rx="118" ry="118" fill="none" stroke="#fff" stroke-opacity="0.08" stroke-dasharray="2 6"/>
+      <ellipse rx="78" ry="78" fill="none" stroke="#fff" stroke-opacity="0.08" stroke-dasharray="2 6"/>
+      <ellipse rx="40" ry="40" fill="none" stroke="#fff" stroke-opacity="0.06"/>
+      <circle r="34" fill="url(#core)"/>
+      <text y="9" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="26" font-weight="800" fill="#fff">Z</text>
+
+      <g>
+        <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="18s" repeatCount="indefinite"/>
+        <g transform="translate(118 0)">
+          <g><animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="18s" repeatCount="indefinite"/>
+            <circle r="9" fill="#22D3EE"/><circle r="16" fill="#22D3EE" fill-opacity="0.18"/>
+            <text y="30" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" fill="#A5F3FC">ColdBot</text>
+          </g>
+        </g>
+      </g>
+      <g>
+        <animateTransform attributeName="transform" type="rotate" from="140" to="-220" dur="26s" repeatCount="indefinite"/>
+        <g transform="translate(78 0)">
+          <g><animateTransform attributeName="transform" type="rotate" from="-140" to="220" dur="26s" repeatCount="indefinite"/>
+            <circle r="8" fill="#F59E0B"/><circle r="14" fill="#F59E0B" fill-opacity="0.18"/>
+            <text y="28" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" fill="#FDE68A">QanoonAI</text>
+          </g>
+        </g>
+      </g>
+      <g>
+        <animateTransform attributeName="transform" type="rotate" from="250" to="610" dur="22s" repeatCount="indefinite"/>
+        <g transform="translate(118 0)">
+          <g><animateTransform attributeName="transform" type="rotate" from="-250" to="-610" dur="22s" repeatCount="indefinite"/>
+            <circle r="8" fill="#34D399"/><circle r="14" fill="#34D399" fill-opacity="0.18"/>
+            <text y="28" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="11" fill="#A7F3D0">ZensLearn</text>
+          </g>
+        </g>
+      </g>
+    </g>
+
+    <!-- identity -->
+    <text x="58" y="62" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" letter-spacing="3" fill="#818CF8">CO-FOUNDER &amp; CEO · ZENSBOT · PAKISTAN</text>
+    <text x="56" y="128" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="64" font-weight="800" letter-spacing="-2" fill="url(#name)">Hassan Arshad</text>
+    <g clip-path="url(#nameclip)">
+      <rect x="-160" y="60" width="140" height="90" fill="url(#sweep)" opacity="0.55" transform="skewX(-20)">
+        <animate attributeName="x" dur="7s" repeatCount="indefinite" values="-200;700;700" keyTimes="0;0.3;1"/>
+      </rect>
+    </g>
+    <text x="58" y="166" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif" font-size="18" fill="#94A3B8">Building AI products that do real work, from Pakistan, for the world.</text>
+
+    <!-- typing line -->
+    <text x="58" y="227" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="22" fill="#64748B">$</text>
+    <text x="80" y="227" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="22" fill="#E2E8F0">I build</text>
+    <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="22">
+      <text x="186" y="227" fill="#67E8F9" clip-path="url(#t0)">AI that books sales meetings.</text>
+      <text x="186" y="227" fill="#FCD34D" clip-path="url(#t1)">AI that reads 16M court judgments.</text>
+      <text x="186" y="227" fill="#6EE7B7" clip-path="url(#t2)">the LMS 500+ institutes run on.</text>
+    </g>
+    <rect x="188" y="208" width="11" height="24" fill="#E2E8F0">
+      <animate attributeName="x" dur="12s" repeatCount="indefinite"
+        values="188;576;576;188;188;641;641;188;188;601;601;188;188"
+        keyTimes="0;0.1167;0.2833;0.3167;0.3333;0.45;0.6167;0.65;0.6667;0.7833;0.95;0.9833;1"/>
+      <animate attributeName="opacity" dur="1s" repeatCount="indefinite" values="1;1;0;0" keyTimes="0;0.5;0.5;1"/>
+    </rect>
+
+    <!-- status bar -->
+    <line x1="58" y1="266" x2="520" y2="266" stroke="#fff" stroke-opacity="0.08"/>
+    <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="12" fill="#94A3B8">
+      <circle cx="64" cy="290" r="4" fill="#22C55E"><animate attributeName="opacity" dur="2s" repeatCount="indefinite" values="1;0.3;1"/></circle>
+      <text x="76" y="294">3 products live</text>
+      <text x="206" y="294" fill="#475569">·</text>
+      <text x="222" y="294">21 jurisdictions indexed</text>
+      <text x="410" y="294" fill="#475569">·</text>
+      <text x="426" y="294">zensbot.com</text>
+    </g>
+  </g>
+  <rect x="0.5" y="0.5" width="839" height="319" rx="19.5" fill="none" stroke="#fff" stroke-opacity="0.08"/>
+</svg>
