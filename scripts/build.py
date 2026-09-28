@@ -166,6 +166,7 @@ def panel(w, h, clip_id="p") -> tuple[str, str]:
 COPY = dict(
     name="Hassan Arshad",
     hero=["We build AI products used by thousands", "of people every day, across law,", "education, finance and business."],
+    entity=["Zensbot LLC and Zensbot (Pvt) Ltd", "Offices in three cities in Pakistan."],
     zl_head="The LMS 500+ institutes run on.",
     zl_body=["Web, mobile and desktop apps with live classes,", "all under each institute's own brand."],
     qa_head="AI legal research for Pakistan.",
@@ -236,7 +237,9 @@ def hero(fc) -> None:
         f'<g class="in d1">{img(zb, 44, 44, zbw, 22)}</g>'
         f'<g class="in d2">{text(42, 164, COPY["name"], 54, 600, INK, ls=-1.8)}'
         f'{lines(44, 206, COPY["hero"], 18, 27)}'
-        f'{text(44, 318, "zensbot.com →", 14, 400, ACCENT, MONO)}</g>'
+        f'{text(44, 296, COPY["entity"][0], 14.5, 600, INK)}'
+        f'{text(44, 317, COPY["entity"][1], 14.5, 400, MUTED)}'
+        f'{text(44, 350, "zensbot.com →", 14, 400, ACCENT, MONO)}</g>'
         f'<g class="in d3">{stage}</g>'
     ) + c
     svg("hero", h, body, fc + hero_motion(), "Hassan Arshad, co-founder of Zensbot")
